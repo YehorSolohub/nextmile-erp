@@ -1,10 +1,13 @@
 /**
- * NextMile ERP - STABLE SAVE & DELETE
+ * NextMile ERP - Warehouse Added
  */
 
 let HOURLY_RATE = 1500;
-let editingOrderId = null; // ID замовлення, яке редагуємо
-const state = { clients: [] };
+let editingOrderId = null; 
+const state = { 
+    clients: [],
+    products: [] // <-- НОВЕ: База товарів
+};
 
 const EMPLOYEES = [
     { id: 1, name: "Олександр (Моторист)" },
@@ -22,12 +25,16 @@ const views = {
 // --- INIT ---
 document.addEventListener('DOMContentLoaded', () => {
     loadData();
-    
+    setupNavigation();
+});
+
+function setupNavigation() {
     document.querySelectorAll('.menu-item').forEach(item => {
         item.addEventListener('click', (e) => {
-            const text = item.innerText.toUpperCase();
             document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
             item.classList.add('active');
+            
+            const text = item.innerText.toUpperCase();
             
             Object.values(views).forEach(el => { if(el) el.style.display = 'none'; });
             const fab = document.querySelector('.fab');
@@ -41,23 +48,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderKanban();
             } else if (text.includes('СКЛАД')) {
                 views.warehouse.style.display = 'block';
+                if(fab) fab.style.display = 'none'; // На складі своя кнопка
+                renderWarehouse(); // <-- НОВЕ: Малюємо склад
             }
         });
     });
-});
+}
 
 async function loadData() {
+    // Завантаження клієнтів
     try {
         const res = await fetch('/clients');
         if (res.ok) state.clients = await res.json();
-        renderClients();
-    } catch(e) { 
-        console.log("Local Mode");
-        renderClients(); 
-    }
+    } catch(e) { console.log("Local Clients Mode"); }
+
+    // Завантаження товарів (НОВЕ)
+    try {
+        const res = await fetch('/products');
+        if (res.ok) state.products = await res.json();
+    } catch(e) { console.log("Local Products Mode"); }
+
+    renderClients();
 }
 
-// --- RENDER ---
+// --- RENDER CLIENTS (Без змін) ---
 function renderClients() {
     const list = document.getElementById('clientsList');
     if(!list) return;
@@ -120,43 +134,90 @@ function createOrderHtml(order) {
     </div>`;
 }
 
-// --- ВИДАЛЕННЯ ЗАМОВЛЕННЯ (Щоб прибрати дублі) ---
-window.deleteOrder = async (orderId) => {
-    if(!confirm("Ви впевнені, що хочете видалити цей заказ-наряд?")) return;
+// --- WAREHOUSE LOGIC (НОВЕ!) ---
 
-    // Шукаємо і видаляємо локально
-    state.clients.forEach(client => {
-        if(client.orders) {
-            client.orders = client.orders.filter(o => o.id !== orderId);
-        }
+// 1. Рендеринг таблиці
+function renderWarehouse() {
+    const tbody = document.getElementById('productsTableBody');
+    if(!tbody) return;
+    tbody.innerHTML = '';
+
+    if (state.products.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">Склад порожній</td></tr>';
+        return;
+    }
+
+    state.products.forEach(prod => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #eee';
+        tr.innerHTML = `
+            <td style="padding:12px; font-weight:bold;">${prod.sku || '-'}</td>
+            <td style="padding:12px;">${prod.name}</td>
+            <td style="padding:12px; color:#666;">${prod.category || '-'}</td>
+            <td style="padding:12px; font-weight:bold;">${prod.qty} шт</td>
+            <td style="padding:12px;">${prod.buyPrice} $</td>
+            <td style="padding:12px; font-weight:bold; color:#27ae60;">${prod.sellPrice} грн</td>
+            <td style="padding:12px;">
+                <i class="fa-solid fa-trash" style="cursor:pointer; color:#e74c3c;" onclick="deleteProduct(${prod.id})"></i>
+            </td>
+        `;
+        tbody.appendChild(tr);
     });
+}
 
-    renderClients();
-    renderKanban();
+// 2. Додавання товару
+document.getElementById('addProductForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const newProduct = {
+        id: Date.now(),
+        sku: document.getElementById('prodSku').value,
+        name: document.getElementById('prodName').value,
+        category: document.getElementById('prodCategory').value,
+        qty: parseInt(document.getElementById('prodQty').value) || 0,
+        buyPrice: parseFloat(document.getElementById('prodBuy').value) || 0,
+        sellPrice: parseFloat(document.getElementById('prodSell').value) || 0
+    };
 
-    // Видаляємо на сервері
+    state.products.push(newProduct);
+    renderWarehouse();
+    
+    document.getElementById('productModal').close();
+    document.getElementById('addProductForm').reset();
+
     try {
-        await fetch(`/orders/${orderId}`, { method: 'DELETE' });
-    } catch(err) { console.log('Deleted locally'); }
+        await fetch('/products', { 
+            method: 'POST', 
+            headers:{'Content-Type':'application/json'}, 
+            body:JSON.stringify(newProduct) 
+        });
+    } catch(err) { console.log('Product saved locally'); }
+});
+
+// 3. Видалення товару
+window.deleteProduct = async (id) => {
+    if(!confirm("Видалити товар?")) return;
+    state.products = state.products.filter(p => p.id !== id);
+    renderWarehouse();
+    try { await fetch(`/products/${id}`, { method: 'DELETE' }); } catch(err){}
 };
 
-// --- MODALS ---
+
+// --- ORDERS LOGIC (Без змін, але потрібна для роботи) ---
 window.openOrderModal = (clientId) => {
-    editingOrderId = null; // Це НОВЕ
+    editingOrderId = null;
     document.getElementById('modalClientId').value = clientId;
     document.getElementById('carModel').value = '';
     document.getElementById('partsCost').value = 0;
     document.getElementById('advance').value = 0;
     document.getElementById('services-container').innerHTML = '';
-    
     addServiceRow(); 
     document.getElementById('orderModal').showModal();
     calc();
 };
 
 window.editOrder = (id) => {
-    editingOrderId = id; // Це РЕДАГУВАННЯ
-    
+    editingOrderId = id;
     let targetOrder, targetClient;
     state.clients.forEach(c => {
         if(c.orders) {
@@ -166,7 +227,6 @@ window.editOrder = (id) => {
     });
 
     if(!targetOrder) return;
-    
     document.getElementById('modalClientId').value = targetClient.id;
     document.getElementById('carModel').value = targetOrder.carModel;
     document.getElementById('partsCost').value = targetOrder.partsCost || 0;
@@ -180,21 +240,23 @@ window.editOrder = (id) => {
     } else {
         addServiceRow({ name: targetOrder.description, hours: targetOrder.hours, price: targetOrder.pricePerHour });
     }
-    
     document.getElementById('orderModal').showModal();
     calc();
 };
 
-// --- ЗБЕРЕЖЕННЯ (Fix: Спочатку закриваємо, потім думаємо) ---
+window.deleteOrder = async (orderId) => {
+    if(!confirm("Ви впевнені?")) return;
+    state.clients.forEach(c => { if(c.orders) c.orders = c.orders.filter(o => o.id !== orderId); });
+    renderClients();
+    try { await fetch(`/orders/${orderId}`, { method: 'DELETE' }); } catch(err) {}
+};
+
 document.getElementById('addOrderForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
     const clientId = document.getElementById('modalClientId').value;
     const client = state.clients.find(c => c.id == clientId);
-    
     if (!client) return;
 
-    // Збір даних
     const services = [];
     document.querySelectorAll('.service-row').forEach(r => {
         const masters = [];
@@ -218,13 +280,12 @@ document.getElementById('addOrderForm').addEventListener('submit', async (e) => 
         status: 'ЧЕРГА'
     };
 
-    // Оновлення стану
     if (editingOrderId) {
         const orderIndex = client.orders.findIndex(o => o.id === editingOrderId);
         if (orderIndex !== -1) {
             orderData.id = editingOrderId;
-            orderData.status = client.orders[orderIndex].status; // Зберігаємо старий статус
-            client.orders[orderIndex] = orderData; // ПЕРЕЗАПИСУЄМО, А НЕ ДОДАЄМО
+            orderData.status = client.orders[orderIndex].status;
+            client.orders[orderIndex] = orderData;
         }
     } else {
         if(!client.orders) client.orders = [];
@@ -232,17 +293,10 @@ document.getElementById('addOrderForm').addEventListener('submit', async (e) => 
         client.orders.push(orderData);
     }
 
-    // 1. СПОЧАТКУ ЗАКРИВАЄМО МОДАЛКУ!
     document.getElementById('orderModal').close();
     document.getElementById('addOrderForm').reset();
+    renderClients();
 
-    // 2. ПОТІМ ОНОВЛЮЄМО ЕКРАН
-    try {
-        renderClients();
-        renderKanban();
-    } catch(err) { console.error("Render error", err); }
-
-    // 3. ПОТІМ ВІДПРАВЛЯЄМО НА СЕРВЕР
     try {
         const url = editingOrderId ? `/orders/${editingOrderId}` : '/orders';
         const method = editingOrderId ? 'PUT' : 'POST';
@@ -250,19 +304,18 @@ document.getElementById('addOrderForm').addEventListener('submit', async (e) => 
     } catch(err) {}
 });
 
-// --- СЕРВІСНІ РЯДКИ ---
+// Інше
 window.addServiceRow = (d=null) => {
     const container = document.getElementById('services-container');
     const id = Date.now() + Math.random().toString().slice(2);
     const div = document.createElement('div');
     div.className = 'service-row';
-    
     div.innerHTML = `
         <div class="service-inputs-row">
             <div class="col-name"><label>Послуга</label><input class="form-control service-name" placeholder="Назва..." value="${d?d.name:''}"></div>
             <div class="col-qty"><label>Год</label><input type="number" class="form-control service-hours" step="0.5" value="${d?d.hours:'1'}" oninput="calc()"></div>
             <div class="col-price"><label>Ціна</label><input type="number" class="form-control service-price" value="${d?d.price:HOURLY_RATE}" oninput="calc()"></div>
-            <div class="col-del"><i class="fa-solid fa-trash btn-delete-row" title="Видалити послугу" onclick="this.closest('.service-row').remove(); calc()"></i></div>
+            <div class="col-del"><i class="fa-solid fa-trash btn-delete-row" onclick="this.closest('.service-row').remove(); calc()"></i></div>
         </div>
         <div class="service-masters-list" id="m-${id}"></div>
         <div style="margin-top:5px;"><button type="button" class="btn-small" onclick="addMaster('${id}')">+ Майстер</button></div>
@@ -296,12 +349,9 @@ window.calc = () => {
     document.getElementById('liveTotal').innerText = `РАЗОМ: ${tot} грн`;
 };
 
-// ... Kanban and Client logic same as before ...
 window.deleteClient = (id) => { if(confirm('Видалити клієнта?')) { state.clients = state.clients.filter(c => c.id !== id); renderClients(); } };
 document.getElementById('addClientForm').addEventListener('submit', async (e) => { e.preventDefault(); const name = document.getElementById('newClientName').value; const phone = document.getElementById('newClientPhone').value; state.clients.push({id:Date.now(), name, phone, orders:[]}); renderClients(); document.getElementById('clientModal').close(); });
-const cancelBtn = document.querySelector('.btn-cancel'); if(cancelBtn) cancelBtn.onclick = () => document.getElementById('orderModal').close();
 
-// --- KANBAN RENDER ---
 function renderKanban() {
     const board = document.getElementById('kanbanBoard');
     if(!board) return;
@@ -319,3 +369,5 @@ function renderKanban() {
 window.allowDrop = (e) => e.preventDefault();
 window.drag = (e, id) => e.dataTransfer.setData("text", id);
 window.drop = async (e, statusKey) => { e.preventDefault(); const orderId = parseInt(e.dataTransfer.getData("text")); const statusMap = { 'queue': 'ЧЕРГА', 'work': 'В РОБОТІ', 'done': 'ГОТОВО' }; const newStatusText = statusMap[statusKey]; let found = false; state.clients.forEach(c => { if(c.orders) { const o = c.orders.find(ord => ord.id === orderId); if(o) { o.status = newStatusText; found = true; } } }); if(found) renderKanban(); try { await fetch(`/orders/${orderId}/status`, { method: 'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status: newStatusText}) }); } catch(err){} };
+
+const cancelBtn = document.querySelector('.btn-cancel'); if(cancelBtn) cancelBtn.onclick = () => document.getElementById('orderModal').close();

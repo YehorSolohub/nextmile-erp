@@ -147,18 +147,34 @@
                     <div style="flex:1"><label>Артикул</label><input type="text" id="prodSku" placeholder="OC90" required></div>
                     <div style="flex:1"><label>Категорія</label><input type="text" id="prodCategory" placeholder="Фільтри"></div>
                 </div>
+                
                 <div class="form-group spacer-top">
                     <label>Назва товару</label>
                     <input type="text" id="prodName" placeholder="Фільтр масляний..." required>
                 </div>
+                
                 <div class="form-group spacer-top">
                     <label>Кількість</label><input type="number" id="prodQty" value="1">
                 </div>
+                
                 <div style="display: flex; gap: 15px; margin-top: 15px;">
-                    <div style="flex:1"><label>Ціна Вхід</label><input type="number" id="prodBuy" placeholder="0"></div>
-                    <div style="flex:1"><label>Ціна Вихід</label><input type="number" id="prodSell" placeholder="0" required></div>
+                    <div style="flex:1">
+                        <label>Ціна Вхід (Закупка)</label>
+                        <div class="input-group">
+                            <input type="number" id="prodBuy" placeholder="0">
+                            <select id="prodCurrency">
+                                <option value="UAH" selected>₴</option>
+                                <option value="USD">$</option>
+                                <option value="EUR">€</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="flex:1">
+                        <label>Ціна Вихід (Продаж, ГРН)</label>
+                        <input type="number" id="prodSell" placeholder="0" required>
+                    </div>
                 </div>
-            </div>
+                </div>
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" onclick="document.getElementById('productModal').close()">СКАСУВАТИ</button>
                 <button type="submit" class="btn-save">ДОДАТИ</button>

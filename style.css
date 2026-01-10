@@ -222,3 +222,26 @@ label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px; c
     box-shadow: 0 10px 20px rgba(0,0,0,0.3); transition: transform 0.2s;
 }
 .fab:hover { transform: scale(1.1) rotate(90deg); background: var(--accent); }
+
+/* Група: Інпут + Вибір валюти */
+.input-group {
+    display: flex;
+    width: 100%;
+}
+
+.input-group input {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: none; /* Прибираємо межу між ними */
+    flex: 1; /* Розтягується на всю ширину */
+}
+
+.input-group select {
+    width: 80px; /* Фіксована ширина для значка валюти */
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    background-color: #f0f0f0;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 10px; /* Відступ як у input */
+}

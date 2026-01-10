@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NextMile ERP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;700&family=Rye&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="logo">
+            <img src="img/logo.svg" alt="NextMile Logo" style="max-width: 150px;">
+        </div>
+
+        <nav>
+            <a href="#" class="menu-item active"><i class="fa-solid fa-users"></i> КЛІЄНТИ</a>
+            <a href="#" class="menu-item"><i class="fa-solid fa-wrench"></i> МАЙСТЕРНЯ</a>
+            <a href="#" class="menu-item"><i class="fa-solid fa-boxes-stacked"></i> СКЛАД</a>
+            <a href="#" class="menu-item"><i class="fa-solid fa-money-bill-wave"></i> КАСА</a>
+            
+            <div class="nav-divider"></div>
+            
+            <a href="#" class="menu-item"><i class="fa-solid fa-gear"></i> НАЛАШТУВАННЯ</a>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <div>
+                <h1>База Клієнтів</h1>
+                <p class="text-muted">Система керування автосервісом</p>
+            </div>
+            <button class="btn btn-icon" onclick="loadData()" title="Оновити">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
+        </div>
+
+        <div id="clientsList" class="grid-container"></div>
+
+        <div id="kanbanBoard" class="kanban-container" style="display: none;">
+            </div>
+
+        <div id="warehouseView" style="display: none;">
+            <div class="card">
+                <div class="card-body">
+                    <div style="text-align: right; margin-bottom: 15px;">
+                        <button class="btn btn-primary" onclick="document.getElementById('productModal').showModal()" style="background: #d32f2f; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">+ Додати Товар</button>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="text-align: left; border-bottom: 2px solid #E5E7EB; color: #6B7280; font-size: 12px; text-transform: uppercase;">
+                                <th style="padding: 10px;">Артикул</th>
+                                <th style="padding: 10px;">Назва</th>
+                                <th style="padding: 10px;">Категорія</th>
+                                <th style="padding: 10px;">Залишок</th>
+                                <th style="padding: 10px;">Ціна (Вхід)</th>
+                                <th style="padding: 10px;">Ціна (Вихід)</th>
+                                <th style="padding: 10px;">Дії</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <button class="fab" onclick="document.getElementById('clientModal').showModal()">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+
+    <dialog id="clientModal">
+        <div class="modal-header">
+            <span>Новий Клієнт</span>
+            <button class="btn-close" onclick="document.getElementById('clientModal').close()"><i class="fa-solid fa-times"></i></button>
+        </div>
+        <form id="addClientForm">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>ПІБ Клієнта</label>
+                    <input type="text" id="newClientName" placeholder="Введіть ім'я..." required>
+                </div>
+                <div class="form-group">
+                    <label>Номер телефону</label>
+                    <input type="text" id="newClientPhone" placeholder="+380..." required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('clientModal').close()">СКАСУВАТИ</button>
+                <button type="submit" class="btn-save">Зберегти</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="orderModal">
+        <div class="modal-header">
+            <span>Нове Замовлення</span>
+            <button class="btn-close" onclick="document.getElementById('orderModal').close()"><i class="fa-solid fa-times"></i></button>
+        </div>
+        <form id="addOrderForm">
+            <div class="modal-body">
+                <input type="hidden" id="modalClientId">
+                <div class="form-group">
+                    <label>Автомобіль</label>
+                    <input type="text" id="carModel" placeholder="BMW X5..." required>
+                </div>
+
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <label style="margin:0;">ВИКОНАНІ РОБОТИ</label>
+                        <button type="button" class="btn btn-icon" style="font-size: 12px; padding: 4px 10px; width: auto; height: auto;" onclick="addServiceRow()">
+                            <i class="fa-solid fa-plus"></i> Додати послугу
+                        </button>
+                    </div>
+                    <div id="services-container" style="display: flex; flex-direction: column; gap: 15px;"></div>
+                </div>
+
+                <div class="form-group spacer-top">
+                    <label>ВАРТІСТЬ ЗАПЧАСТИН (ГРН)</label>
+                    <input type="number" id="partsCost" placeholder="0" oninput="calc()">
+                </div>
+                <div class="form-group spacer-top">
+                    <label>Аванс (грн)</label>
+                    <input type="number" id="advance" value="0" oninput="calc()">
+                </div>
+                <div id="liveTotal" class="total-display">РАЗОМ: 0 грн</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('orderModal').close()">СКАСУВАТИ</button>
+                <button type="submit" class="btn-save">ЗБЕРЕГТИ</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="productModal">
+        <div class="modal-header">
+            <span>📦 Новий Товар</span>
+            <button class="btn-close" onclick="document.getElementById('productModal').close()"><i class="fa-solid fa-times"></i></button>
+        </div>
+        <form id="addProductForm">
+            <div class="modal-body">
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex:1"><label>Артикул</label><input type="text" id="prodSku" placeholder="OC90" required></div>
+                    <div style="flex:1"><label>Категорія</label><input type="text" id="prodCategory" placeholder="Фільтри"></div>
+                </div>
+                <div class="form-group spacer-top">
+                    <label>Назва товару</label>
+                    <input type="text" id="prodName" placeholder="Фільтр масляний..." required>
+                </div>
+                <div class="form-group spacer-top">
+                    <label>Кількість</label><input type="number" id="prodQty" value="1">
+                </div>
+                <div style="display: flex; gap: 15px; margin-top: 15px;">
+                    <div style="flex:1"><label>Ціна Вхід</label><input type="number" id="prodBuy" placeholder="0"></div>
+                    <div style="flex:1"><label>Ціна Вихід</label><input type="number" id="prodSell" placeholder="0" required></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('productModal').close()">СКАСУВАТИ</button>
+                <button type="submit" class="btn-save">ДОДАТИ</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script src="script.js"></script>
+</body>
+</html>

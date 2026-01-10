@@ -161,29 +161,42 @@ function createOrderHtml(order) {
 }
 
 // --- WAREHOUSE ---
+
 function renderWarehouse() {
+    // Шукаємо таблицю
     const tbody = document.getElementById('productsTableBody');
     if(!tbody) return;
     tbody.innerHTML = '';
     
+    // Якщо пусто
     if (state.products.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:#999;">Склад порожній</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px; color:#999; font-style:italic;">Склад порожній. Додайте перший товар!</td></tr>';
         return;
     }
 
     state.products.forEach(prod => {
-        // Тут ми ще не маємо валюти, тому просто грн
-        // FIX: Використовуємо quantity замість qty
+        // Валюта
+        let curr = '₴';
+        if(prod.currency === 'USD') curr = '$';
+        if(prod.currency === 'EUR') curr = '€';
+        
+        // Категорія (якщо немає - пишемо "Загальне")
+        const categoryLabel = prod.category || 'Загальне';
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td style="font-weight:bold; color:#555;">${prod.sku || '-'}</td>
-            <td>${prod.name}</td>
-            <td style="color:#777;">${prod.category || '-'}</td>
-            <td><span style="background:#f0f0f0; padding:4px 8px; border-radius:4px; font-weight:bold;">${prod.quantity} шт</span></td>
-            <td>${prod.buyPrice} ₴</td>
-            <td style="font-weight:bold; color:#2a9d8f;">${prod.sellPrice} ₴</td>
+            <td><span class="sku-text">${prod.sku || '-'}</span></td>
+            <td style="font-weight: 600; font-size: 15px;">${prod.name}</td>
+            <td><span class="badge-category">${categoryLabel}</span></td>
+            <td><span class="badge-stock">${prod.quantity} шт</span></td>
+            <td style="color: #666;">${prod.buyPrice} ${curr}</td>
+            <td><span class="price-sell">${prod.sellPrice} ₴</span></td>
             <td style="text-align:right;">
-                <i class="fa-solid fa-trash" style="cursor:pointer; color:#e63946;" onclick="deleteProduct(${prod.id})"></i>
+                <div style="display:flex; justify-content:flex-end;">
+                    <div class="action-btn" onclick="deleteProduct(${prod.id})" title="Видалити">
+                        <i class="fa-solid fa-trash"></i>
+                    </div>
+                </div>
             </td>
         `;
         tbody.appendChild(tr);

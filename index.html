@@ -44,25 +44,33 @@
             </div>
 
         <div id="warehouseView" style="display: none;">
-            <div class="card">
+            <div class="card fade-in">
                 <div class="card-body">
-                    <div style="text-align: right; margin-bottom: 15px;">
-                        <button class="btn btn-primary" onclick="document.getElementById('productModal').showModal()" style="background: #d32f2f; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">+ Додати Товар</button>
+            
+                    <div class="warehouse-header">
+                        <h2>📦 Склад запчастин</h2>
+                        <button class="btn btn-save" onclick="document.getElementById('productModal').showModal()">
+                            + Додати Товар
+                        </button>
                     </div>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr style="text-align: left; border-bottom: 2px solid #E5E7EB; color: #6B7280; font-size: 12px; text-transform: uppercase;">
-                                <th style="padding: 10px;">Артикул</th>
-                                <th style="padding: 10px;">Назва</th>
-                                <th style="padding: 10px;">Категорія</th>
-                                <th style="padding: 10px;">Залишок</th>
-                                <th style="padding: 10px;">Ціна (Вхід)</th>
-                                <th style="padding: 10px;">Ціна (Вихід)</th>
-                                <th style="padding: 10px;">Дії</th>
-                            </tr>
-                        </thead>
-                        <tbody id="productsTableBody"></tbody>
-                    </table>
+
+                    <div class="table-wrapper">
+                        <table class="styled-table">
+                            <thead>
+                                <tr>
+                                    <th>Артикул</th>
+                                    <th>Назва</th>
+                                    <th>Категорія</th>
+                                    <th>Залишок</th>
+                                    <th>Вхід</th>
+                                    <th>Вихід</th>
+                                    <th style="text-align:right">Дії</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productsTableBody"></tbody>
+                        </table>
+                    </div>
+
                 </div>
             </div>
         </div>

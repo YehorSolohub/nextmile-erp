@@ -7,16 +7,17 @@ let editingOrderId = null;
 const state = { clients: [], products: [] };
 
 const EMPLOYEES = [
-    { id: 1, name: "Олександр (Моторист)" },
-    { id: 2, name: "Дмитро (Ходовик)" },
-    { id: 3, name: "Андрій (Електрик)" },
-    { id: 4, name: "Учень Сергій" }
+    { id: 1, name: "Олександр (Моторист)", role: 'MENTOR' },
+    { id: 2, name: "Дмитро (Ходовик)", role: 'MASTER' },
+    { id: 3, name: "Андрій (Електрик)", role: 'MASTER' },
+    { id: 4, name: "Учень Сергій", role: 'TRAINEE' }
 ];
 
 const views = {
     clients: document.getElementById('clientsList'),
     workshop: document.getElementById('kanbanBoard'),
-    warehouse: document.getElementById('warehouseView')
+    warehouse: document.getElementById('warehouseView'),
+    kasa: document.getElementById('kasaView')
 };
 
 // --- INIT ---
@@ -46,7 +47,12 @@ function setupNavigation() {
                 views.warehouse.style.display = 'block';
                 if(fab) fab.style.display = 'none';
                 renderWarehouse();
+            } else if (text.includes('КАСА')) {
+                views.kasa.style.display = 'block';
+                if(fab) fab.style.display = 'none';
+                renderKasa(); 
             }
+            
         });
     });
 }
@@ -389,3 +395,85 @@ document.getElementById('addClientForm').addEventListener('submit', async (e) =>
 });
 
 const cancelBtn = document.querySelector('.btn-cancel'); if(cancelBtn) cancelBtn.onclick = () => document.getElementById('orderModal').close();
+
+// --- KASA LOGIC ---
+function renderKasa() {
+    const tableBody = document.getElementById('salaryTableBody');
+    if (!tableBody) return;
+    tableBody.innerHTML = '';
+
+    let stats = {};
+    EMPLOYEES.forEach(emp => {
+        stats[emp.id] = { name: emp.name, role: emp.role, ordersCount: 0, hours: 0, workRevenue: 0, salary: 0 };
+    });
+
+    let totalRevenue = 0;
+    let totalPartsCost = 0;
+
+    state.clients.forEach(client => {
+        if(!client.orders) return;
+        client.orders.forEach(order => {
+            totalPartsCost += (parseFloat(order.partsCost) || 0);
+            if (order.services) {
+                order.services.forEach(service => {
+                    const sPrice = parseFloat(service.price) || 0;
+                    const sHours = parseFloat(service.hours) || 0;
+                    const sTotal = sPrice * sHours;
+                    totalRevenue += sTotal;
+
+                    if (service.masters && service.masters.length > 0) {
+                        const hasMentor = service.masters.some(m => EMPLOYEES.find(e => e.id == m.id)?.role === 'MENTOR');
+                        const hasTrainee = service.masters.some(m => EMPLOYEES.find(e => e.id == m.id)?.role === 'TRAINEE');
+                        const isTrainingCase = hasMentor && hasTrainee;
+
+                        service.masters.forEach(m => {
+                            const empId = m.id;
+                            if (stats[empId]) {
+                                stats[empId].ordersCount += 1;
+                                stats[empId].hours += (sHours * (m.share / 100));
+                                stats[empId].workRevenue += (sTotal * (m.share / 100));
+
+                                let commission = 0;
+                                if (isTrainingCase) {
+                                    if (stats[empId].role === 'MENTOR') commission = 0.20;
+                                    else if (stats[empId].role === 'TRAINEE') commission = 0.30;
+                                    else commission = 0.50;
+                                } else {
+                                    if (stats[empId].role === 'TRAINEE') commission = 0.30;
+                                    else commission = 0.50;
+                                }
+                                stats[empId].salary += (sTotal * (m.share / 100)) * commission;
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    });
+
+    totalRevenue += totalPartsCost;
+    let totalSalaryFund = 0;
+
+    Object.values(stats).forEach(s => {
+        totalSalaryFund += s.salary;
+        let salaryDisplay = `${s.salary.toFixed(0)} ₴`;
+        if (s.salary > 40000 && (s.role === 'MASTER' || s.role === 'MENTOR')) {
+            salaryDisplay = `<span style="color:#d32f2f; font-weight:bold;">${s.salary.toFixed(0)} ₴</span> <small>(>40к)</small>`;
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><b>${s.name}</b><br><small style="color:#888">${s.role}</small></td>
+            <td>${s.ordersCount}</td>
+            <td>${s.hours.toFixed(1)} год</td>
+            <td>${s.workRevenue.toFixed(0)} ₴</td>
+            <td style="font-weight:bold; color:#27ae60;">${salaryDisplay}</td>
+        `;
+        tableBody.appendChild(tr);
+    });
+
+    document.getElementById('totalRevenue').innerText = `${totalRevenue.toFixed(0)} ₴`;
+    document.getElementById('totalPartsCost').innerText = `${totalPartsCost.toFixed(0)} ₴`;
+    document.getElementById('totalSalaryFund').innerText = `${totalSalaryFund.toFixed(0)} ₴`;
+    document.getElementById('grossProfit').innerText = `${(totalRevenue - totalPartsCost - totalSalaryFund).toFixed(0)} ₴`;
+}

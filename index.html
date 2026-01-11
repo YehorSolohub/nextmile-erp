@@ -74,7 +74,53 @@
                 </div>
             </div>
         </div>
+        <div id="kasaView" style="display: none;">
+            <div class="view-header">
+                <h2>💰 Фінанси та Зарплати</h2>
+            </div>
 
+            <div class="dashboard-grid">
+                <div class="dash-card income">
+                    <div class="dash-title">Загальний Оборот</div>
+                    <div class="dash-value" id="totalRevenue">0 ₴</div>
+                    <div class="dash-sub">Роботи + Запчастини</div>
+                </div>
+                <div class="dash-card expense">
+                    <div class="dash-title">Витрати (Запчастини)</div>
+                    <div class="dash-value" id="totalPartsCost">0 ₴</div>
+                </div>
+                <div class="dash-card profit">
+                    <div class="dash-title">"Брудний" Прибуток</div>
+                    <div class="dash-value" id="grossProfit">0 ₴</div>
+                    <div class="dash-sub">Без вирахування ЗП</div>
+                </div>
+                <div class="dash-card salary">
+                    <div class="dash-title">Фонд Зарплати</div>
+                    <div class="dash-value" id="totalSalaryFund">0 ₴</div>
+                    <div class="dash-sub">Орієнтовно</div>
+                </div>
+            </div>
+
+            <div class="card fade-in salary-section">
+                <div class="card-body">
+                    <h3 class="section-title">Зарплатна відомість</h3>
+                    <div class="table-wrapper">
+                        <table class="styled-table">
+                            <thead>
+                                <tr>
+                                    <th>Майстер</th>
+                                    <th>Послуг</th>
+                                    <th>Години</th>
+                                    <th>Каса робіт</th>
+                                    <th>Зарплата (На руки)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="salaryTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <button class="fab" onclick="document.getElementById('clientModal').showModal()">

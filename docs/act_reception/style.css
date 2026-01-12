@@ -1,0 +1,54 @@
+/* --- public/docs/act_reception/style.css --- */
+body {
+    font-family: 'Arial', sans-serif;
+    font-size: 12px;
+    margin: 0;
+    padding: 20px;
+    color: #000;
+    background: #fff;
+}
+
+/* Кнопка друку */
+.btn-print { 
+    position: fixed; top: 20px; right: 20px; 
+    padding: 10px 20px; background: #d32f2f; color: white; 
+    border: none; cursor: pointer; font-size: 14px; border-radius: 4px; 
+    font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.btn-print:hover { background: #b71c1c; }
+
+/* Верстка */
+.header { 
+    display: flex; justify-content: space-between; 
+    border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; 
+}
+.header h2 { margin: 0; text-transform: uppercase; font-size: 18px; }
+
+.section { margin-bottom: 15px; }
+.row { display: flex; justify-content: space-between; gap: 20px; }
+.col { width: 48%; }
+
+/* Таблиці */
+table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+th, td { border: 1px solid #000; padding: 4px; text-align: left; vertical-align: middle; }
+th { background: #f0f0f0; text-align: center; font-size: 11px; font-weight: bold; }
+
+/* Елементи */
+.box { display: inline-block; width: 12px; height: 12px; border: 1px solid #000; margin-right: 5px; vertical-align: middle; }
+.scheme { border: 1px dashed #999; height: 150px; display: flex; align-items: center; justify-content: center; color: #999; margin-top: 5px; background: #fafafa; }
+
+/* Юридичний текст */
+.legal { 
+    font-size: 10px; text-align: justify; margin-top: 20px; 
+    border: 1px solid #000; padding: 8px; background: #f9f9f9; 
+}
+.legal ol { margin: 5px 0 5px 20px; padding: 0; }
+
+.signatures { margin-top: 40px; display: flex; justify-content: space-between; }
+.sign-box { width: 40%; text-align: center; border-top: 1px solid #000; padding-top: 10px; }
+
+@media print {
+    @page { margin: 0.5cm; size: A4; }
+    .no-print { display: none !important; }
+    body, .scheme, th, .legal { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

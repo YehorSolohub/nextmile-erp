@@ -97,11 +97,21 @@ function showToast(message) {
         container.id = 'toast-container';
         document.body.appendChild(container);
     }
+    
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.innerText = message;
+    
+    // Додаємо іконку та текст
+    toast.innerHTML = `<i class="fa-solid fa-check-circle" style="color:#27ae60; margin-right:10px;"></i> ${message}`;
+    
     container.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    
+    // Видаляємо через 5 секунди
+    setTimeout(() => {
+        toast.style.opacity = '0'; // Плавне зникнення
+        toast.style.transform = 'translateY(-20px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
 }
 
 // --- RENDER CLIENTS ---
@@ -271,9 +281,17 @@ document.getElementById('addOrderForm').addEventListener('submit', async (e) => 
         });
     });
 
+    // Збираємо всі дані для збереження
     const orderData = {
         clientId: parseInt(clientId),
+        
+        // 👇 НОВІ ПОЛЯ (Додали ці 4 рядки)
         carModel: document.getElementById('carModel').value,
+        carPlate: document.getElementById('carPlate').value, 
+        carVin: document.getElementById('carVin').value,
+        carMileage: document.getElementById('carMileage').value,
+        // 👆 ----------------
+
         services: services,
         partsCost: document.getElementById('partsCost').value,
         advance: document.getElementById('advance').value,
@@ -337,6 +355,9 @@ window.editOrder = (id) => {
     if(!targetOrder) return;
     document.getElementById('modalClientId').value = targetClient.id;
     document.getElementById('carModel').value = targetOrder.carModel;
+    document.getElementById('carPlate').value = targetOrder.carPlate || ''; 
+    document.getElementById('carVin').value = targetOrder.carVin || '';     
+    document.getElementById('carMileage').value = targetOrder.carMileage || '';
     document.getElementById('partsCost').value = targetOrder.partsCost || 0;
     document.getElementById('advance').value = targetOrder.advance || 0;
     document.getElementById('services-container').innerHTML = '';
@@ -378,30 +399,96 @@ window.addServiceRow = (d=null) => {
 };
 window.addMaster = (rowId, m=null) => { const list = document.getElementById(`m-${rowId}`); const opts = EMPLOYEES.map(e => `<option value="${e.id}" ${m && m.id==e.id?'selected':''}>${e.name}</option>`).join(''); const div = document.createElement('div'); div.className = 'master-row'; div.innerHTML = `<select class="form-control master-select" style="margin:0; width:auto; flex:1;">${opts}</select><input type="number" class="form-control participation-input" style="margin:0; width:70px;" value="${m?m.share:'100'}"> %<i class="fa-solid fa-times" style="cursor:pointer; color:#999;" onclick="this.parentElement.remove()"></i>`; list.appendChild(div); };
 window.calc = () => { let tot = 0; document.querySelectorAll('.service-row').forEach(r => { const h = parseFloat(r.querySelector('.service-hours').value) || 0; const p = parseFloat(r.querySelector('.service-price').value) || 0; tot += h * p; }); tot += parseFloat(document.getElementById('partsCost').value)||0; document.getElementById('liveTotal').innerText = `РАЗОМ: ${tot} грн`; };
-window.deleteClient = (id) => { if(confirm('Видалити клієнта?')) { state.clients = state.clients.filter(c => c.id !== id); saveDataLocally(); renderClients(); showToast('Клієнта видалено'); } };
-
-// FIX: ADDED FORM RESET HERE
+window.deleteClient = async (id) => {
+    if(confirm('Видалити клієнта та всю його історію замовлень?')) {
+        // 1. Видаляємо візуально (щоб було швидко)
+        state.clients = state.clients.filter(c => c.id !== id);
+        saveDataLocally();
+        renderClients();
+        
+        // 2. Відправляємо запит на сервер (щоб видалити з Бази)
+        try {
+            await fetch(`/clients/${id}`, { method: 'DELETE' });
+            showToast('Клієнта видалено остаточно');
+        } catch(err) {
+            console.error(err);
+            alert('Помилка: Не вдалося видалити з бази даних');
+            // Якщо помилка - краще перезавантажити дані, щоб повернути клієнта
+            loadData(); 
+        }
+    }
+};
+/* --- СТВОРЕННЯ КЛІЄНТА (+ АВТО АВТОМАТИЧНО) --- */
 document.getElementById('addClientForm').addEventListener('submit', async (e) => { 
     e.preventDefault(); 
+    
+    // 1. Збираємо дані
     const name = document.getElementById('newClientName').value; 
     const phone = document.getElementById('newClientPhone').value; 
-    state.clients.push({id:Date.now(), name, phone, orders:[]}); 
-    saveDataLocally();
-    renderClients(); 
-    document.getElementById('addClientForm').reset();
-    document.getElementById('clientModal').close(); 
-    showToast('Клієнт створений'); 
-    try { await fetch('/clients', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ name, phone }) }); } catch(err) {} 
+    const carModel = document.getElementById('newClientCar').value;
+    const carPlate = document.getElementById('newClientPlate').value;
+    const carVin = document.getElementById('newClientVin').value;
+
+    try {
+        // КРОК А: Створюємо клієнта
+        const res = await fetch('/clients', { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify({ name, phone }) 
+        });
+
+        if (!res.ok) throw new Error("Помилка сервера");
+        
+        // Отримуємо створеного клієнта (з ID) від сервера
+        const newClient = await res.json();
+
+        // КРОК Б: Якщо ввели машину -> Створюємо замовлення
+        if (carModel.trim() !== "") {
+            const orderData = {
+                clientId: newClient.id, // Використовуємо ID нового клієнта
+                carModel: carModel,
+                carPlate: carPlate || "",
+                carVin: carVin || "",
+                carMileage: 0,
+                description: "Перший візит",
+                services: [],
+                partsCost: 0,
+                advance: 0,
+                status: 'ЧЕРГА'
+            };
+
+            await fetch('/orders', { 
+                method: 'POST', 
+                headers:{'Content-Type':'application/json'}, 
+                body:JSON.stringify(orderData) 
+            });
+            
+            showToast('Клієнт + Авто додані!');
+        } else {
+            showToast('Клієнт успішно створений'); 
+        }
+
+        // Оновлюємо таблицю і чистимо форму
+        await loadData();
+        document.getElementById('addClientForm').reset();
+        document.getElementById('clientModal').close(); 
+
+    } catch(err) {
+        console.error(err);
+        showToast('Помилка: ' + err.message);
+    } 
 });
 
 const cancelBtn = document.querySelector('.btn-cancel'); if(cancelBtn) cancelBtn.onclick = () => document.getElementById('orderModal').close();
 
 // --- KASA LOGIC ---
+/* --- KASA LOGIC (FIXED) --- */
 function renderKasa() {
     const tableBody = document.getElementById('salaryTableBody');
     if (!tableBody) return;
     tableBody.innerHTML = '';
 
+    // Скидаємо статистику
     let stats = {};
     EMPLOYEES.forEach(emp => {
         stats[emp.id] = { name: emp.name, role: emp.role, ordersCount: 0, hours: 0, workRevenue: 0, salary: 0 };
@@ -413,36 +500,61 @@ function renderKasa() {
     state.clients.forEach(client => {
         if(!client.orders) return;
         client.orders.forEach(order => {
+            
+            // 1. Рахуємо витрати на запчастини (вони рахуються завжди, бо ми їх купили)
             totalPartsCost += (parseFloat(order.partsCost) || 0);
+
+            // ⚠️ ВАЖЛИВО: Перевіряємо статус замовлення
+            // Зарплату і дохід рахуємо ТІЛЬКИ якщо робота зроблена
+            const isDone = order.status === 'done' || order.status === 'ГОТОВО';
+
             if (order.services) {
                 order.services.forEach(service => {
                     const sPrice = parseFloat(service.price) || 0;
                     const sHours = parseFloat(service.hours) || 0;
                     const sTotal = sPrice * sHours;
-                    totalRevenue += sTotal;
 
+                    // Якщо замовлення готове - додаємо в загальний оборот
+                    if (isDone) {
+                        totalRevenue += sTotal;
+                    }
+
+                    // Рахуємо зарплату майстрам
                     if (service.masters && service.masters.length > 0) {
-                        const hasMentor = service.masters.some(m => EMPLOYEES.find(e => e.id == m.id)?.role === 'MENTOR');
-                        const hasTrainee = service.masters.some(m => EMPLOYEES.find(e => e.id == m.id)?.role === 'TRAINEE');
+                        // Визначаємо тип робіт для комісії
+                        const hasMentor = service.masters.some(m => getMasterRole(m) === 'MENTOR');
+                        const hasTrainee = service.masters.some(m => getMasterRole(m) === 'TRAINEE');
                         const isTrainingCase = hasMentor && hasTrainee;
 
                         service.masters.forEach(m => {
-                            const empId = m.id;
+                            // 🔥 ФІКС ПРОБЛЕМИ ЗНИКНЕННЯ:
+                            // Якщо дані з сервера -> беремо employeeId
+                            // Якщо дані локальні -> беремо id
+                            const empId = m.employeeId ? m.employeeId : parseInt(m.id);
+                            
                             if (stats[empId]) {
-                                stats[empId].ordersCount += 1;
-                                stats[empId].hours += (sHours * (m.share / 100));
-                                stats[empId].workRevenue += (sTotal * (m.share / 100));
+                                // Статистику (години) додаємо завжди, або тільки коли готово?
+                                // Зазвичай гроші нараховують тільки коли "ГОТОВО".
+                                
+                                if (isDone) { 
+                                    stats[empId].ordersCount += 1;
+                                    stats[empId].hours += (sHours * (m.share / 100));
+                                    stats[empId].workRevenue += (sTotal * (m.share / 100));
 
-                                let commission = 0;
-                                if (isTrainingCase) {
-                                    if (stats[empId].role === 'MENTOR') commission = 0.20;
-                                    else if (stats[empId].role === 'TRAINEE') commission = 0.30;
-                                    else commission = 0.50;
-                                } else {
-                                    if (stats[empId].role === 'TRAINEE') commission = 0.30;
-                                    else commission = 0.50;
+                                    let commission = 0;
+                                    const role = stats[empId].role;
+
+                                    if (isTrainingCase) {
+                                        if (role === 'MENTOR') commission = 0.20;
+                                        else if (role === 'TRAINEE') commission = 0.30;
+                                        else commission = 0.50; // Інші
+                                    } else {
+                                        if (role === 'TRAINEE') commission = 0.30;
+                                        else commission = 0.50; // Стандарт 50%
+                                    }
+                                    
+                                    stats[empId].salary += (sTotal * (m.share / 100)) * commission;
                                 }
-                                stats[empId].salary += (sTotal * (m.share / 100)) * commission;
                             }
                         });
                     }
@@ -451,12 +563,21 @@ function renderKasa() {
         });
     });
 
-    totalRevenue += totalPartsCost;
+    // Загальний оборот включає і запчастини (якщо замовлення готове? 
+    // Зазвичай запчастини рахують одразу, але для чистоти додамо їх в оборот теж тільки по факту)
+    // Тут логіка проста: Revenue = Роботи (Done) + Запчастини (All). 
+    // Можна змінити, щоб запчастини теж додавалися тільки Done, але поки залишимо так.
+    
+    totalRevenue += totalPartsCost; 
+    
     let totalSalaryFund = 0;
 
+    // Малюємо таблицю
     Object.values(stats).forEach(s => {
         totalSalaryFund += s.salary;
         let salaryDisplay = `${s.salary.toFixed(0)} ₴`;
+        
+        // Підсвітка, якщо велика ЗП
         if (s.salary > 40000 && (s.role === 'MASTER' || s.role === 'MENTOR')) {
             salaryDisplay = `<span style="color:#d32f2f; font-weight:bold;">${s.salary.toFixed(0)} ₴</span> <small>(>40к)</small>`;
         }
@@ -476,4 +597,74 @@ function renderKasa() {
     document.getElementById('totalPartsCost').innerText = `${totalPartsCost.toFixed(0)} ₴`;
     document.getElementById('totalSalaryFund').innerText = `${totalSalaryFund.toFixed(0)} ₴`;
     document.getElementById('grossProfit').innerText = `${(totalRevenue - totalPartsCost - totalSalaryFund).toFixed(0)} ₴`;
+}
+
+// Допоміжна функція для отримання ролі (враховує різницю ID)
+function getMasterRole(m) {
+    const empId = m.employeeId ? m.employeeId : parseInt(m.id);
+    const emp = EMPLOYEES.find(e => e.id === empId);
+    return emp ? emp.role : 'MASTER';
+}
+
+/* --- ДРУК АКТУ --- */
+function printAcceptanceAct() {
+    const clientId = document.getElementById('modalClientId').value;
+    let clientName = "Гість";
+    let clientPhone = "---";
+
+    // Знаходимо клієнта в базі (state.clients завантажується при старті)
+    if (typeof state !== 'undefined' && state.clients) {
+        const client = state.clients.find(c => c.id == clientId);
+        if (client) {
+            clientName = client.name;
+            clientPhone = client.phone;
+        }
+    }
+
+    // Збираємо дані
+    const printData = {
+        orderId: "ORD-" + Math.floor(Date.now() / 1000).toString().slice(-4),
+        clientName: clientName,
+        clientPhone: clientPhone,
+        carModel: document.getElementById('carModel').value || '',
+        // Якщо цих полів ще немає в HTML, будуть пусті рядки
+        carPlate: document.getElementById('carPlate')?.value || '', 
+        carVin: document.getElementById('carVin')?.value || '',
+        carMileage: document.getElementById('carMileage')?.value || ''
+    };
+
+    // Зберігаємо і відкриваємо
+    localStorage.setItem('print_data_act', JSON.stringify(printData));
+    window.open('docs/act_reception/print.html', '_blank');
+}
+
+/* --- ДРУК ПРЯМО З МОДАЛКИ (ШВИДКИЙ ПРИЙОМ) --- */
+function printModalAct() {
+    const clientId = document.getElementById('modalClientId').value;
+    let clientName = "Клієнт";
+    let clientPhone = "";
+
+    // Шукаємо клієнта в базі (бо ID у нас є)
+    if (typeof state !== 'undefined' && state.clients) {
+        const client = state.clients.find(c => c.id == clientId);
+        if (client) {
+            clientName = client.name;
+            clientPhone = client.phone;
+        }
+    }
+
+    // Збираємо дані для друку (VIN, Номер, Пробіг)
+    const printData = {
+        orderId: "NEW", // Пишемо NEW, бо замовлення ще не створене
+        clientName: clientName,
+        clientPhone: clientPhone,
+        carModel: document.getElementById('carModel').value || '',
+        carPlate: document.getElementById('carPlate').value || '',
+        carVin: document.getElementById('carVin').value || '',
+        carMileage: document.getElementById('carMileage').value || ''
+    };
+
+    // Зберігаємо і відкриваємо
+    localStorage.setItem('print_data_act', JSON.stringify(printData));
+    window.open('docs/act_reception/print.html', '_blank');
 }

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Акт Прийому-Передачі ТЗ</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <button class="btn-print no-print" onclick="window.print()">🖨️ ДРУКУВАТИ</button>
+
+    <div class="header">
+        <div>
+            <h2>NEXTMILE SERVICE</h2>
+            <small>м. Київ, вул. Автозаводська, 1</small><br>
+            <small>Тел: +38 (099) 000-00-00</small>
+        </div>
+        <div style="text-align: right;">
+            <h2>АКТ ПРИЙМАННЯ ТЗ</h2>
+            <div>До замовлення № <strong id="val-order-id">---</strong></div>
+            <div>Дата: <span id="val-date">---</span></div>
+        </div>
+    </div>
+
+    <div class="section row">
+        <div class="col">
+            <strong>ВИКОНАВЕЦЬ:</strong><br>
+            ФОП "NextMile Service"<br>ЄДРПОУ: XXXXXXXX
+        </div>
+        <div class="col">
+            <strong>ЗАМОВНИК:</strong><br>
+            <span id="val-client" style="font-weight:bold; font-size: 14px;">---</span><br>
+            Тел: <span id="val-phone">---</span>
+        </div>
+    </div>
+
+    <div class="section">
+        <strong>ТРАНСПОРТНИЙ ЗАСІБ:</strong>
+        <table>
+            <tr><th>Марка / Модель</th><th>Держ. Номер</th><th>VIN код</th><th>Пробіг</th></tr>
+            <tr><td id="val-car">---</td><td id="val-plate">---</td><td id="val-vin">---</td><td id="val-mileage">---</td></tr>
+        </table>
+    </div>
+
+    <div class="section row">
+        <div class="col">
+            <strong>ЗОВНІШНІЙ СТАН:</strong>
+            <table>
+                <tr><th>Елемент</th><th>ОК</th><th>Пошк.</th><th>Короз.</th></tr>
+                <tr><td>Бампер Передній</td><td><div class="box"></div></td><td><div class="box"></div></td><td><div class="box"></div></td></tr>
+                <tr><td>Капот / Дах</td><td><div class="box"></div></td><td><div class="box"></div></td><td><div class="box"></div></td></tr>
+                <tr><td>Крила / Двері (Л)</td><td><div class="box"></div></td><td><div class="box"></div></td><td><div class="box"></div></td></tr>
+                <tr><td>Крила / Двері (П)</td><td><div class="box"></div></td><td><div class="box"></div></td><td><div class="box"></div></td></tr>
+                <tr><td>Скло / Оптика</td><td><div class="box"></div></td><td><div class="box"></div></td><td><div class="box"></div></td></tr>
+                <tr><td>Бампер Задній</td><td><div class="box"></div></td><td><div class="box"></div></td><td><div class="box"></div></td></tr>
+            </table>
+        </div>
+        <div class="col">
+            <strong>КОМПЛЕКТАЦІЯ:</strong>
+            <table>
+                <tr><td>Салон</td><td><div class="box"></div> Чисто <div class="box"></div> Брудно</td></tr>
+                <tr><td>Техпаспорт</td><td><div class="box"></div> Так <div class="box"></div> Ні</td></tr>
+                <tr><td>Ключі</td><td><div class="box"></div> Осн. <div class="box"></div> Зап.</td></tr>
+                <tr><td>Секретка</td><td><div class="box"></div> Так <div class="box"></div> Ні</td></tr>
+                <tr><td>Пальне</td><td><div class="box"></div> 1/4 <div class="box"></div> 1/2 <div class="box"></div> Full</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="section">
+        <strong>СХЕМА ПОШКОДЖЕНЬ:</strong>
+        <div class="scheme">(Місце для позначок "X")</div>
+    </div>
+
+    <div class="section legal">
+        <strong>УМОВИ ОБСЛУГОВУВАННЯ:</strong>
+        <ol>
+            <li><strong>Платне зберігання:</strong> 350 грн/год починаючи з 2-ї доби після завершення робіт.</li>
+            <li><strong>Тест-драйв:</strong> Дозвіл на тестові поїздки для діагностики.</li>
+            <li><strong>Відповідальність:</strong> СТО не відповідає за цінні речі в авто.</li>
+        </ol>
+        <div style="margin-top: 5px; font-style: italic;">* Підпис Клієнта підтверджує згоду з умовами.</div>
+    </div>
+
+    <div class="signatures">
+        <div class="sign-box">Автомобіль здав (Замовник)<br><br><br>____________________ / <span id="sign-client-name"></span></div>
+        <div class="sign-box">Автомобіль прийняв (Майстер)<br><br><br>____________________ / Адміністратор</div>
+    </div>
+
+    <script>
+        // JS прямо тут, бо він специфічний тільки для цього файлу
+        window.onload = function() {
+            const rawData = localStorage.getItem('print_data_act');
+            if (rawData) {
+                const data = JSON.parse(rawData);
+                const safeText = (id, txt) => { const el = document.getElementById(id); if(el) el.innerText = txt || '---'; };
+
+                safeText('val-order-id', data.orderId);
+                safeText('val-date', new Date().toLocaleDateString('uk-UA'));
+                safeText('val-client', data.clientName);
+                safeText('sign-client-name', data.clientName);
+                safeText('val-phone', data.clientPhone);
+                safeText('val-car', data.carModel);
+                safeText('val-plate', data.carPlate);
+                safeText('val-vin', data.carVin);
+                safeText('val-mileage', data.carMileage ? data.carMileage + ' км' : '---');
+            }
+        };
+    </script>
+</body>
+</html>

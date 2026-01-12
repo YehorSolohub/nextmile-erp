@@ -135,12 +135,29 @@
         <form id="addClientForm">
             <div class="modal-body">
                 <div class="form-group">
-                    <label>ПІБ Клієнта</label>
-                    <input type="text" id="newClientName" placeholder="Введіть ім'я..." required>
+                    <label>ПІБ Клієнта <span style="color:red">*</span></label>
+                    <input type="text" id="newClientName" placeholder="Іван Іванов" required class="input-bold">
                 </div>
                 <div class="form-group">
-                    <label>Номер телефону</label>
-                    <input type="text" id="newClientPhone" placeholder="+380..." required>
+                    <label>Номер телефону <span style="color:red">*</span></label>
+                    <input type="text" id="newClientPhone" placeholder="+38 050..." required>
+                </div>
+
+                <div class="optional-section">
+                    <span class="section-label">Автомобіль (Якщо є)</span>
+                    
+                    <div class="form-group">
+                        <input type="text" id="newClientCar" placeholder="Модель (напр. BMW X5)">
+                    </div>
+
+                    <div class="row-inputs">
+                        <div>
+                            <input type="text" id="newClientPlate" placeholder="AA 0000 AA" class="input-small">
+                        </div>
+                        <div>
+                            <input type="text" id="newClientVin" placeholder="VIN код" class="input-small">
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -158,9 +175,33 @@
         <form id="addOrderForm">
             <div class="modal-body">
                 <input type="hidden" id="modalClientId">
-                <div class="form-group">
-                    <label>Автомобіль</label>
-                    <input type="text" id="carModel" placeholder="BMW X5..." required>
+                
+                <div class="car-details-box">
+                    <div class="form-group">
+                        <label>Автомобіль (Модель)</label>
+                        <input type="text" id="carModel" placeholder="BMW X5..." required class="input-bold">
+                    </div>
+
+                    <div class="car-details-row">
+                        <div style="flex:1">
+                            <label>Держ. Номер</label>
+                            <input type="text" id="carPlate" placeholder="AA 1234 KA" style="text-transform: uppercase;">
+                        </div>
+                        <div style="flex:1">
+                            <label>VIN (останні 6)</label>
+                            <input type="text" id="carVin" placeholder="XXXXXX" style="text-transform: uppercase;">
+                        </div>
+                        <div style="flex:1">
+                            <label>Пробіг (км)</label>
+                            <input type="number" id="carMileage" placeholder="215000">
+                        </div>
+                    </div>
+                    
+                    <div class="btn-print-wrapper">
+                        <button type="button" class="btn-print-dark" onclick="printModalAct()">
+                            <i class="fa-solid fa-print"></i> Роздрукувати Акт Прийому
+                        </button>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -186,6 +227,9 @@
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" onclick="document.getElementById('orderModal').close()">СКАСУВАТИ</button>
                 <button type="submit" class="btn-save">ЗБЕРЕГТИ</button>
+                <button type="button" class="btn-cancel" onclick="printAcceptanceAct()" style="margin-right: auto; border-color: #333; color: #333;">
+                    <i class="fa-solid fa-print"></i> Акт Прийому
+                </button>
             </div>
         </form>
     </dialog>

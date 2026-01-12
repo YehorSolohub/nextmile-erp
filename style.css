@@ -397,3 +397,129 @@ label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px; c
 .hidden { display: none !important; }
 .view-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .view-header h2 { margin: 0; font-size: 1.5rem; font-weight: 700; color: #2c3e50; }
+
+/* --- СТИЛІ ДЛЯ МОДАЛКИ ЗАМОВЛЕННЯ --- */
+.car-details-box {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #e9ecef;
+}
+
+.car-details-row {
+    display: flex;
+    gap: 10px;
+}
+
+/* Стиль для інпуту моделі (жирний шрифт) */
+.input-bold {
+    font-weight: bold;
+    font-size: 15px;
+}
+
+/* Чорна кнопка друку */
+.btn-print-dark {
+    background: #2c3e50;
+    color: #fff;
+    padding: 8px 15px;
+    cursor: pointer;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-print-dark:hover {
+    background: #000;
+}
+
+.btn-print-wrapper {
+    text-align: right;
+    margin-top: 10px;
+}
+
+/* --- СТИЛІ ДЛЯ ШВИДКОГО СТВОРЕННЯ КЛІЄНТА --- */
+
+/* Блок розділення (пунктирна лінія) */
+.optional-section {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px dashed #ccc;
+}
+
+/* Заголовок "ОПЦІОНАЛЬНО" */
+.section-label {
+    color: #888;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+    display: block;
+}
+
+/* Використовуємо flex для полів в один рядок */
+.row-inputs {
+    display: flex;
+    gap: 10px;
+}
+
+.row-inputs > div {
+    flex: 1;
+}
+
+/* Маленький шрифт для VIN/Номеру, щоб влазило */
+.input-small {
+    font-size: 13px;
+    text-transform: uppercase;
+}
+
+/* --- TOAST NOTIFICATIONS (Спливаючі повідомлення) --- */
+#toast-container {
+    position: fixed; /* Фіксуємо поверх всього */
+    top: 20px;
+    right: 20px;
+    z-index: 9999; /* Щоб було поверх модалок */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none; /* Щоб можна було клікати крізь пусте місце */
+}
+
+.toast {
+    background: #333;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    font-size: 14px;
+    font-weight: 600;
+    
+    /* Анімація появи */
+    animation: slideIn 0.3s ease-out forwards;
+    
+    /* Зелена смужка збоку (успіх) */
+    border-left: 5px solid #27ae60;
+    
+    display: flex;
+    align-items: center;
+    min-width: 250px;
+    pointer-events: auto; /* Саме повідомлення може перехоплювати кліки */
+}
+
+/* Анімація виїзду справа */
+@keyframes slideIn {
+    from {
+        transform: translateX(120%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
